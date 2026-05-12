@@ -89,7 +89,7 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
         3. ÖNEMLİ KARARLAR/NOTLAR: (Alınan kararlar veya tarihler)
 
         DÖKÜM:
-        {transcription_text}
+        {structured_text}
         """
 
         completion = client.chat.completions.create(
