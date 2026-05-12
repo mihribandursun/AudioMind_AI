@@ -1,4 +1,4 @@
-# 🎙️ AudioMind AI Pro
+# 🎙️ AudioMind AI 
 **AI-Powered Speech Transcription & Smart Analysis System**
 
 AudioMind AI, ses kayıtlarını metne dönüştüren ve ardından **Llama 3.3** kullanarak bağlamsal analiz yapan uçtan uca bir sistemdir.
