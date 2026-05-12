@@ -4,7 +4,7 @@ import torchaudio
 from pyannote.audio import Pipeline
 from groq import Groq
 import gc
-
+from fpdf import FPDF
 
 import os
 from dotenv import load_dotenv
@@ -74,17 +74,22 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
         
         # PROMPT İÇİNE mode_instruction'ı yerleştiriyoruz!
         prompt = f"""
-        Sen profesyonel bir analiz uzmanısın.
-        ÖZEL TALİMAT: {mode_instruction}
-        
-        KURALLAR:
-        1. İSİM EŞLEŞTİRME: Metinden isimleri bul ve SPEAKER etiketlerini kaldır.
-        2. HATA DÜZELTME: 'İlirden' -> 'İleri Derin Öğrenme' gibi hataları düzelt.
-        3. AKIŞ: 'BİLİNMİYOR' kısımlarını akışa göre doğru kişiye ata.
-        4. TARİH: 14 Nisan'da konuşuluyorsa ve 'gelecek ay' deniyorsa 23 Mayıs olduğunu belirt.
+        Aşağıdaki ses dökümü, bir ses analiz sisteminden alınmıştır. 
+        Lütfen bu konuşmayı "{mode}" moduna uygun olarak profesyonel bir rapora dönüştür.
+
+        DÖKÜM İÇERİSİNDEKİ SPEAKER ETİKETLERİNE DİKKAT ET:
+        - Konuşmacıları (Speaker_00, Speaker_01 vb.) dökümdeki akışa göre analiz et.
+        - Kimin hangi görüşü savunduğunu veya hangi bilgiyi verdiğini açıkça belirt.
+        - Analizinde "Speaker_00 şunu dedi, Speaker_01 bunu ekledi" gibi bir yapı kullan.
+        - Eğer konuşmacıların isimleri metin içinde geçiyorsa (Mihriban, Büşra gibi), dökümdeki etiketlerle isimleri eşleştir.
+
+        RAPOR ŞABLONU:
+        1. KONUŞMACI ANALİZİ: (Kimin kim olduğunu ve genel tavrını açıkla)
+        2. KONUŞMA AKIŞI: (Kim, ne zaman, ne dedi? Kronolojik özet)
+        3. ÖNEMLİ KARARLAR/NOTLAR: (Alınan kararlar veya tarihler)
 
         DÖKÜM:
-        {structured_text}
+        {transcription_text}
         """
 
         completion = client.chat.completions.create(
@@ -99,3 +104,22 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
 
     except Exception as e:
         return f"Hata: {str(e)}"
+    
+
+def save_as_pdf(text, filename="analiz_raporu.pdf"):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # PDF'e Türkçe karakter desteği için standart bir font (Arial/Helvetica)
+    # Not: fpdf varsayılan olarak Türkçe karakterde bazen zorlanabilir.
+    # En güvenli yol 'latin-1' yerine metni temizlemektir.
+    pdf.set_font("Arial", size=12)
+    
+    # Metni satırlara bölerek PDF'e yazdır
+    for line in text.split('\n'):
+        # Türkçe karakter problemini minimize etmek için basit bir encode/decode
+        clean_line = line.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 10, txt=clean_line, align='L')
+    
+    pdf.output(filename)
+    return filename
