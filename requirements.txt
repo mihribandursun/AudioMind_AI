@@ -122,3 +122,4 @@ pyannote.audio
 groq
 torch
 torchaudio
+fpdf
