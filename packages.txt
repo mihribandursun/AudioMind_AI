@@ -1,2 +1,5 @@
 ffmpeg
-libavcodec-dev
+libavcodec-extra
+libavformat-dev
+libavutil-dev
+libavdevice-dev
