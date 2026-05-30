@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 
-st.set_page_config(page_title="AudioMind AI Pro", page_icon="🎙️", layout="wide")
+st.set_page_config(page_title="AudioMind AI", page_icon="🎙️", layout="wide")
 
 # 🎨 TASARIM VE RENK DÜZELTMELERİ (CSS)
 # streamlit_app.py içindeki CSS alanını SADECE bununla değiştir:
