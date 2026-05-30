@@ -1,68 +1,53 @@
-import torch
-from faster_whisper import WhisperModel
-import gc
-from fpdf import FPDF
 import os
+import gc
 from dotenv import load_dotenv
 from groq import Groq
-
-# ÖNEMLİ: Hata veren torchaudio kütüphanesini tamamen çıkardık!
-# Onun yerine standart kütüphane olan wave kullanacağız.
-import wave
+from fpdf import FPDF
 
 load_dotenv()
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-def load_and_fix_audio(path):
-    # Torchaudio olmadan, dosyanın varlığını kontrol eden güvenli fonksiyon
-    return path
-
 def process_audio_full(audio_path, progress_callback, mode="Genel"):
-    # Streamlit Cloud üzerinde CPU zorlanmasın diye zorunlu CPU modu
-    device = "cpu" 
     client = Groq(api_key=GROQ_API_KEY)
 
     try:
-        # 1. Modelleri Yükle
-        progress_callback("⏳ Modeller yükleniyor...", 0.1)
+        # 1. Aşama: Groq Cloud ile Ses Dönüştürme (Dinamik ve Genel)
+        progress_callback("⏳ Ses dosyası Groq yapay zeka bulutuna yükleniyor...", 0.2)
         
-        # Pyannote kütüphanesini torchcodec kilitlenmesinden korumak için izole import
-        from pyannote.audio import Pipeline
+        with open(audio_path, "rb") as file:
+            # Bu fonksiyon yüklediğin her farklı sesi dinamik olarak metne çevirir
+            transcription = client.audio.transcriptions.create(
+                file=(os.path.basename(audio_path), file.read()),
+                model="whisper-large-v3",
+                response_format="text",
+                language="tr"
+            )
         
-        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", token=HF_TOKEN).to(torch.device(device))
-        stt_model = WhisperModel("small", device=device, compute_type="int8")
-
-        # 2. Ses İşleme
-        progress_callback("⏳ Ses analiz ediliyor...", 0.3)
+        progress_callback("👥 Konuşmacılar analiz ediliyor ve ayrıştırılıyor...", 0.5)
         
-        # Pyannote analizi
-        diarization_result = pipeline(audio_path)
-        diarization = diarization_result.speaker_diarization if hasattr(diarization_result, 'speaker_diarization') else diarization_result
+        # Groq'tan gelen ham metni, içindeki konuşma akışına göre etiketlemesi için LLM'e veriyoruz.
+        # Bu sayede sunucuda pyannote/torchaudio çökmesi yaşamadan diarization simüle edilmiş oluyor.
+        diarization_prompt = f"""
+        Aşağıdaki Türkçe ses dökümünü incele. Konuşmadaki ses geçişlerini ve bağlamı analiz ederek, 
+        metni kronolojik bir konuşma akışına (Diarization) dönüştür. 
+        Kimin ne zaman konuştuğunu tahmin ederek Speaker_00, Speaker_01 şeklinde satır satır ayır.
+
+        METİN:
+        {transcription}
+        """
         
-        # Whisper transkripsiyonu
-        segments, _ = stt_model.transcribe(audio_path, beam_size=5, language="tr")
+        diarization_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": diarization_prompt}],
+            temperature=0.2
+        )
+        
+        structured_text = diarization_completion.choices[0].message.content
 
-        structured_text = ""
-        for segment in segments:
-            mid_time = (segment.start + segment.end) / 2
-            speaker = "BİLİNMİYOR"
-            for turn, _, spk in diarization.itertracks(yield_label=True):
-                if turn.start <= mid_time <= turn.end:
-                    speaker = spk
-                    break
-            # TEKER TEKER KİMİN NE DEDİĞİNİ BURADA YAZDIRIYORUZ
-            structured_text += f"{speaker}: {segment.text.strip()}\n"
-
-        # 3. Temizlik
-        progress_callback("🧹 Bellek boşaltılıyor...", 0.7)
-        del stt_model
-        del pipeline
-        gc.collect()
-
-        # 4. Groq Analizi
-        progress_callback(f"🚀 {mode} modunda analiz yapılıyor...", 0.8)
+        # 2. Aşama: Mod Raporlama
+        progress_callback(f"🚀 Rapor {mode} moduna göre özelleştiriliyor...", 0.8)
 
         mode_prompts = {
             "Toplantı": "Bu bir toplantı dökümüdür. Kararları, alınan aksiyon maddelerini ve sorumluları bir liste halinde çıkar.",
@@ -72,39 +57,31 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"):
         }
         mode_instruction = mode_prompts.get(mode, mode_prompts["Genel"])
         
-        prompt = f"""
-        Aşağıdaki ses dökümü, bir ses analiz sisteminden alınmıştır. 
-        Lütfen bu konuşmayı "{mode}" moduna uygun olarak profesyonel bir rapora dönüştür.
+        report_prompt = f"""
+        Aşağıdaki yapılandırılmış ses dökümünü "{mode}" moduna uygun olarak profesyonel bir rapora dönüştür.
         {mode_instruction}
 
-        DÖKÜM İÇERİSİNDEKİ SPEAKER ETİKETLERİNE DİKKAT ET:
-        - Konuşmacıları (Speaker_00, Speaker_01 vb.) dökümdeki akışa göre analiz et.
-        - Kimin hangi görüşü savunduğunu veya hangi bilgiyi verdiğini açıkça belirt.
-        - Analizinde "Speaker_00 şunu dedi, Speaker_01 bunu ekledi" gibi bir yapı kullan.
-        - Eğer konuşmacıların isimleri metin içinde geçiyorsa (Mihriban, Büşra gibi), dökümdeki etiketlerle isimleri eşleştir.
-
         RAPOR ŞABLONU:
-        1. KONUŞMACI ANALİZİ: (Kimin kim olduğunu ve genel tavrını açıkla)
-        2. KONUŞMA AKIŞI: (Kim, ne zaman, ne dedi? Kronolojik özet)
-        3. ÖNEMLİ KARARLAR/NOTLAR: (Alınan kararlar veya tarihler)
+        1. KONUŞMACI ANALİZİ: (Konuşmacıların genel tavrını ve rollerini açıkla)
+        2. KONUŞMA AKIŞI: (Kim, ne dedi? Kronolojik net özet)
+        3. ÖNEMLİ KARARLAR/NOTLAR: (Varsa tarihler, kararlar ve önemli detaylar)
 
         DÖKÜM:
         {structured_text}
         """
 
-        completion = client.chat.completions.create(
+        report_completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": "Sen yardımcı bir analiz asistanısın."},
-                      {"role": "user", "content": prompt}],
+                      {"role": "user", "content": report_prompt}],
             temperature=0.1
         )
 
-        final_response = completion.choices[0].message.content
+        final_response = report_completion.choices[0].message.content
         return final_response, structured_text
 
     except Exception as e:
         return f"Hata: {str(e)}", "Döküm oluşturulamadı."
-    
 
 def save_as_pdf(text, filename="analiz_raporu.pdf"):
     pdf = FPDF()
@@ -115,7 +92,6 @@ def save_as_pdf(text, filename="analiz_raporu.pdf"):
         'ş': 's', 'Ş': 'S', 'ı': 'i', 'İ': 'I', 'ğ': 'g', 'Ğ': 'G',
         'ç': 'c', 'Ç': 'C', 'ü': 'u', 'Ü': 'U', 'ö': 'o', 'Ö': 'O'
     }
-    
     clean_text = "".join(turkish_map.get(char, char) for char in text)
     
     for line in clean_text.split('\n'):
