@@ -109,17 +109,23 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
 def save_as_pdf(text, filename="analiz_raporu.pdf"):
     pdf = FPDF()
     pdf.add_page()
-    
-    # PDF'e Türkçe karakter desteği için standart bir font (Arial/Helvetica)
-    # Not: fpdf varsayılan olarak Türkçe karakterde bazen zorlanabilir.
-    # En güvenli yol 'latin-1' yerine metni temizlemektir.
     pdf.set_font("Arial", size=12)
     
-    # Metni satırlara bölerek PDF'e yazdır
-    for line in text.split('\n'):
-        # Türkçe karakter problemini minimize etmek için basit bir encode/decode
-        clean_line = line.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 10, txt=clean_line, align='L')
+    # Türkçe karakterleri standart fontun anlayacağı hale getiren harita
+    turkish_map = {
+        'ş': 's', 'Ş': 'S', 'ı': 'i', 'İ': 'I', 'ğ': 'g', 'Ğ': 'G',
+        'ç': 'c', 'Ç': 'C', 'ü': 'u', 'Ü': 'U', 'ö': 'o', 'Ö': 'O'
+    }
     
+    clean_text = "".join(turkish_map.get(char, char) for char in text)
+    
+    for line in clean_text.split('\n'):
+        # Satır boşsa atla, doluysa güvenli biçimde yazdır
+        if line.strip():
+            clean_line = line.encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(0, 10, txt=clean_line, align='L')
+        else:
+            pdf.ln(5) # Boş satır yüksekliği
+            
     pdf.output(filename)
     return filename

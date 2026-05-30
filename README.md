@@ -1,21 +1,23 @@
-# 🎙️ AudioMind AI 
-**AI-Powered Speech Transcription & Smart Analysis System**
+# 🎙️ AudioMind AI Pro (V3.1)
 
-AudioMind AI, ses kayıtlarını metne dönüştüren ve ardından **Llama 3.3** kullanarak bağlamsal analiz yapan uçtan uca bir sistemdir.
+AudioMind AI is an advanced, production-ready audio transcription and intelligence tool that seamlessly combines **Speaker Diarization** and **Context-Aware Summarization**. 
 
-## 🚀 Özellikler
-- **Speaker Diarization:** Kimin ne zaman konuştuğunu ayırt eder.
-- **Smart Transcription:** Faster-Whisper ile düşük kaynak tüketimli, yüksek doğruluklu döküm.
-- **Context-Aware Analysis:** Groq API üzerinden Llama 3.3 ile modlara özel (Toplantı, Akademi, Röportaj) özetleme.
-- **Hybrid UI:** Hem macOS/Windows (CustomTkinter) hem de Web (Streamlit) arayüzü.
+The system features both a modern **Desktop UI (CustomTkinter)** and a scalable **Web UI (Streamlit)**.
 
-## 🛠️ Teknoloji Stack'i
-- **Models:** Pyannote/Speaker-Diarization, Faster-Whisper
-- **LLM:** Meta Llama 3.3 (via Groq Cloud)
-- **Frameworks:** CustomTkinter (Desktop), Streamlit (Web)
-- **Processing:** Apple Silicon (MPS) & CPU optimization
+## 🚀 Key Features
+- **Speech-to-Text:** Powered by `Faster-Whisper (small)` for high-accuracy local and cloud transcription.
+- **Speaker Diarization:** Integrates `Pyannote.audio 3.1` to separate speakers based on audio timestamps.
+- **LLM Reasoning:** Utilizes `Llama 3.3 (70B)` via **Groq API** for sub-second, context-specific summaries.
+- **Modular Framework:** Custom analytical insights for Meetings, Lectures, and Interviews.
+- **Enterprise Ready:** One-click automated **PDF Report Generation**.
 
-## 📖 Nasıl Kullanılır?
-1. API anahtarlarınızı `.env` dosyasına ekleyin.
-2. `pip install -r requirements.txt` komutuyla bağımlılıkları yükleyin.
-3. `python main.py` ile masaüstü uygulamasını başlatın.
+## 🛠️ Tech Stack
+- **Core:** Python 3.12+, PyTorch (MPS/CPU)
+- **GUI & Web:** CustomTkinter, Streamlit Cloud
+- **AI Models:** Faster-Whisper, Pyannote 3.1, Llama 3.3
+
+## 📦 System Architecture
+1. Audio Preprocessing & Enhancement (`ffmpeg`)
+2. Voice Activity Detection & Speaker Labeling (`Pyannote`)
+3. Transcription & Semantic Segment Alignment (`Whisper`)
+4. Prompt Engineering & Report Structuring (`Groq Cloud`)
