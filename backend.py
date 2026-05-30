@@ -5,15 +5,11 @@ from pyannote.audio import Pipeline
 from groq import Groq
 import gc
 from fpdf import FPDF
-
 import os
 from dotenv import load_dotenv
 
-# .env dosyasındaki değişkenleri sisteme yükle
 load_dotenv()
 
-# API ANAHTARLARINI SİSTEMDEN AL
-# Artık kodun içinde şifre yazmıyor, sistem '.env' dosyasının içine bakıyor.
 HF_TOKEN = os.getenv("HF_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -24,8 +20,7 @@ def load_and_fix_audio(path):
         waveform = resampler(waveform)
     return {"waveform": waveform, "sample_rate": 16000}
 
-# ANA FONKSİYON: Arayüz (main.py) bunu çağıracak
-def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' eklendi
+def process_audio_full(audio_path, progress_callback, mode="Genel"):
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     client = Groq(api_key=GROQ_API_KEY)
 
@@ -60,22 +55,20 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
         gc.collect()
 
         # 4. Groq Analizi
-        progress_callback(f" {mode} modunda analiz yapılıyor...", 0.8)
+        progress_callback(f"🚀 {mode} modunda analiz yapılıyor...", 0.8)
 
-        # MODLARA GÖRE ÖZEL TALİMATLAR
         mode_prompts = {
             "Toplantı": "Bu bir toplantı dökümüdür. Kararları, alınan aksiyon maddelerini ve sorumluları bir liste halinde çıkar.",
             "Akademi/Ders": "Bu bir ders kaydıdır. Konudaki anahtar kavramları, tanımları ve önemli noktaları bir öğrenci notu gibi özetle.",
             "Röportaj": "Bu bir röportajdır. Soru-cevap dinamiğini koruyarak tarafların ana görüşlerini özetle.",
             "Genel": "Konuşmayı genel hatlarıyla özetle ve önemli noktaları belirt."
         }
-
         mode_instruction = mode_prompts.get(mode, mode_prompts["Genel"])
         
-        # PROMPT İÇİNE mode_instruction'ı yerleştiriyoruz!
         prompt = f"""
         Aşağıdaki ses dökümü, bir ses analiz sisteminden alınmıştır. 
         Lütfen bu konuşmayı "{mode}" moduna uygun olarak profesyonel bir rapora dönüştür.
+        {mode_instruction}
 
         DÖKÜM İÇERİSİNDEKİ SPEAKER ETİKETLERİNE DİKKAT ET:
         - Konuşmacıları (Speaker_00, Speaker_01 vb.) dökümdeki akışa göre analiz et.
@@ -103,7 +96,8 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
         return final_response, structured_text
 
     except Exception as e:
-        return f"Hata: {str(e)}"
+        # KRİTİK DÜZELTME: Hata durumunda da iki değer dönüyoruz ki arayüzler çökmesin!
+        return f"Hata: {str(e)}", "Döküm oluşturulamadı."
     
 
 def save_as_pdf(text, filename="analiz_raporu.pdf"):
@@ -111,7 +105,6 @@ def save_as_pdf(text, filename="analiz_raporu.pdf"):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    # Türkçe karakterleri standart fontun anlayacağı hale getiren harita
     turkish_map = {
         'ş': 's', 'Ş': 'S', 'ı': 'i', 'İ': 'I', 'ğ': 'g', 'Ğ': 'G',
         'ç': 'c', 'Ç': 'C', 'ü': 'u', 'Ü': 'U', 'ö': 'o', 'Ö': 'O'
@@ -120,12 +113,11 @@ def save_as_pdf(text, filename="analiz_raporu.pdf"):
     clean_text = "".join(turkish_map.get(char, char) for char in text)
     
     for line in clean_text.split('\n'):
-        # Satır boşsa atla, doluysa güvenli biçimde yazdır
         if line.strip():
             clean_line = line.encode('latin-1', 'replace').decode('latin-1')
             pdf.multi_cell(0, 10, txt=clean_line, align='L')
         else:
-            pdf.ln(5) # Boş satır yüksekliği
+            pdf.ln(5)
             
     pdf.output(filename)
     return filename
