@@ -81,7 +81,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎙️ AudioMind AI Pro")
+st.title("🎙️ AudioMind AI")
 st.caption("Ses dosyalarınızı yükleyin, analiz edin ve akıllı raporunuzla doğrudan sohbet edin.")
 st.markdown("---")
 

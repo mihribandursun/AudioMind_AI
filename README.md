@@ -1,4 +1,4 @@
-# 🎙️ AudioMind AI Pro (V3.1)
+# 🎙️ AudioMind AI
 
 AudioMind AI is an advanced, production-ready audio transcription and intelligence tool that seamlessly combines **Speaker Diarization** and **Context-Aware Summarization**. 
 
