@@ -98,7 +98,7 @@ if uploaded_file:
     with open("temp_audio.m4a", "wb") as f:
         f.write(uploaded_file.getbuffer())
     
-    if st.button("✨ ANALİZİ VE AKIŞI BAŞLAT", use_container_width=True):
+    if st.button(" ANALİZİ BAŞLAT", use_container_width=True):
         with st.status("🚀 AudioMind AI motorları çalışıyor...", expanded=True) as status:
             def st_callback(msg, progress): st.write(msg)
             
@@ -157,7 +157,18 @@ if st.session_state.report:
         
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": chat_prompt}]
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "Sen profesyonel bir analiz asistanısın. Tamamen akıcı, kurallara uygun ve temiz bir Türkçe ile cevap vermelisin. 'himselfini', 'hiện', 'current' gibi yabancı veya uydurma kelimeleri asla kullanma. Cümlelerin net olsun."
+                },
+                {
+                    "role": "user", 
+                    "content": f"Aşağıdaki konuşma dökümüne göre kullanıcı sorusunu net bir şekilde yanıtla:\nDöküm:\n{st.session_state.transcript}\n\nSoru: {user_question}"
+                }
+            ],
+            temperature=0.1 # Sıcaklığı düşük tutuyoruz ki kafasına göre kelime uydurmasın
+
         )
         answer = completion.choices[0].message.content
         
