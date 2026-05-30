@@ -100,8 +100,14 @@ class AudioMindApp(ctk.CTk):
             threading.Thread(target=self.run_backend, args=(file_path, mode), daemon=True).start()
 
     def run_backend(self, path, mode):
-        result = process_audio_full(path, self.update_ui, mode)
+        # backend artık 2 değer döndürdüğü için ikisini de karşılıyoruz
+        result, structured_text = process_audio_full(path, self.update_ui, mode)
+        
+        # Önce arayüzdeki büyük kutuya yapay zeka raporunu yazdırıyoruz
         self.result_box.insert("1.0", result)
+        
+        # Durum çubuğunu güncelliyoruz
+        self.status_label.configure(text="✅ Analiz ve Akış Başarıyla Tamamlandı!")
 
 if __name__ == "__main__":
     app = AudioMindApp()
