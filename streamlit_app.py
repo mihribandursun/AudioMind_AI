@@ -4,11 +4,24 @@ import os
 st.set_page_config(page_title="AudioMind AI Pro", page_icon="🎙️", layout="wide")
 
 # 🎨 TASARIM VE RENK DÜZELTMELERİ (CSS)
+# streamlit_app.py içindeki CSS alanını SADECE bununla değiştir:
 st.markdown("""
     <style>
-    .stApp { background-color: #f8fafc !important; color: #0f172a !important; }
-    [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid #1e293b; }
-    [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] label { color: #f8fafc !important; font-weight: 600; }
+    /* Ana Arka Plan */
+    .stApp {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+    }
+    
+    /* Sol Menü (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a !important;
+        border-right: 1px solid #1e293b;
+    }
+    [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] label {
+        color: #f8fafc !important;
+        font-weight: 600;
+    }
     
     /* Canlı Ana Buton */
     div.stButton > button:first-child {
@@ -20,20 +33,20 @@ st.markdown("""
         border-radius: 10px !important;
     }
     
-    /* 🚨 PDF BUTONU DÜZELTMESİ: Yazı rengi her zaman beyaz ve net */
+    /* 🚨 %100 KESİN PDF BUTONU DÜZELTMESİ 🚨 */
     .download-btn-container div.stButton > button {
         background: linear-gradient(135deg, #059669, #047857) !important;
-        color: #ffffff !important;
-        font-weight: bold !important;
         border-radius: 8px !important;
         border: none !important;
-        opacity: 1 !important;
+        height: 45px !important;
     }
-    .download-btn-container div.stButton > button p {
+    /* Butonun içindeki yazıyı (span) HER ZAMAN beyaz yap */
+    .download-btn-container div.stButton > button span {
         color: #ffffff !important;
+        font-weight: bold !important;
     }
-    .download-btn-container div.stButton > button:hover {
-        background: linear-gradient(135deg, #047857, #065f46) !important;
+    /* Fareyle üstüne gelince de renk beyaz kalmaya devam etsin */
+    .download-btn-container div.stButton > button:hover span {
         color: #ffffff !important;
     }
 
@@ -115,22 +128,20 @@ if st.session_state.report:
     st.markdown("---")
     st.markdown("### 💬 3. AudioMind Chat (Rapora Dair Soru Sor)")
     
-    # 🚨 SOHBET GEÇMİŞİNİ EKRANA BASAN ALAN (Her zaman güncel tutar)
-    chat_container = st.container()
-    with chat_container:
-        for msg in st.session_state.chat_history:
-            with st.chat_message(msg["role"]): 
-                st.write(msg["content"])
+    # 🚨 GEÇMİŞİ EKRANA BASAN KESİN DÖNGÜ (Artık kaybolamaz)
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]): 
+            st.write(msg["content"])
         
-    user_question = st.chat_input("Konuşma hakkında bir soru sorun...")
+    user_question = st.chat_input("Konuşmada geçen detaylar hakkında soru sorun...")
     
     if user_question:
-        # Kullanıcı sorusunu anında ekrana ve hafızaya ekle
-        with chat_container:
-            with st.chat_message("user"): 
-                st.write(user_question)
+        # 1. Kullanıcı mesajını anında hafızaya ekle ve ekranda göster
         st.session_state.chat_history.append({"role": "user", "content": user_question})
+        with st.chat_message("user"):
+            st.write(user_question)
         
+        # 2. Yapay zekaya dökümle birlikte soruyu sor
         client = Groq(api_key=GROQ_API_KEY)
         chat_prompt = f"Aşağıdaki konuşma dökümüne göre kullanıcı sorusunu net bir şekilde yanıtla:\nDöküm:\n{st.session_state.transcript}\n\nSoru: {user_question}"
         
@@ -140,11 +151,10 @@ if st.session_state.report:
         )
         answer = completion.choices[0].message.content
         
-        # Cevabı ekrana ve hafızaya ekle
-        with chat_container:
-            with st.chat_message("assistant"): 
-                st.write(answer)
+        # 3. Asistan cevabını hafızaya ekle ve ekranda göster
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        
-        # Chat geçmişinin senkronize kalması için sayfayı hafifçe tetikle
-        st.rerun()
+        with st.chat_message("assistant"):
+            st.write(answer)
+            
+        # Kilitlenmeye sebep olan st.rerun() komutunu kaldırdık, 
+        # Streamlit artık doğal akışıyla mesajları üst üste biriktirecek!
