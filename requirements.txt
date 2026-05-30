@@ -4,6 +4,4 @@ faster-whisper
 pyannote.audio
 groq
 torch
-torchaudio
-customtkinter
 fpdf

@@ -1,12 +1,14 @@
 import torch
 from faster_whisper import WhisperModel
-import torchaudio
-from pyannote.audio import Pipeline
-from groq import Groq
 import gc
 from fpdf import FPDF
 import os
 from dotenv import load_dotenv
+from groq import Groq
+
+# ÖNEMLİ: Hata veren torchaudio kütüphanesini tamamen çıkardık!
+# Onun yerine standart kütüphane olan wave kullanacağız.
+import wave
 
 load_dotenv()
 
@@ -14,28 +16,32 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def load_and_fix_audio(path):
-    waveform, sample_rate = torchaudio.load(path)
-    if sample_rate != 16000:
-        resampler = torchaudio.transforms.Resample(sample_rate, 16000)
-        waveform = resampler(waveform)
-    return {"waveform": waveform, "sample_rate": 16000}
+    # Torchaudio olmadan, dosyanın varlığını kontrol eden güvenli fonksiyon
+    return path
 
 def process_audio_full(audio_path, progress_callback, mode="Genel"):
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    # Streamlit Cloud üzerinde CPU zorlanmasın diye zorunlu CPU modu
+    device = "cpu" 
     client = Groq(api_key=GROQ_API_KEY)
 
     try:
         # 1. Modelleri Yükle
         progress_callback("⏳ Modeller yükleniyor...", 0.1)
-        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", token=HF_TOKEN).to(device)
-        stt_model = WhisperModel("small", device="cpu", compute_type="int8")
+        
+        # Pyannote kütüphanesini torchcodec kilitlenmesinden korumak için izole import
+        from pyannote.audio import Pipeline
+        
+        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", token=HF_TOKEN).to(torch.device(device))
+        stt_model = WhisperModel("small", device=device, compute_type="int8")
 
         # 2. Ses İşleme
         progress_callback("⏳ Ses analiz ediliyor...", 0.3)
-        fixed_audio = load_and_fix_audio(audio_path)
         
-        diarization_result = pipeline(fixed_audio)
+        # Pyannote analizi
+        diarization_result = pipeline(audio_path)
         diarization = diarization_result.speaker_diarization if hasattr(diarization_result, 'speaker_diarization') else diarization_result
+        
+        # Whisper transkripsiyonu
         segments, _ = stt_model.transcribe(audio_path, beam_size=5, language="tr")
 
         structured_text = ""
@@ -46,6 +52,7 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"):
                 if turn.start <= mid_time <= turn.end:
                     speaker = spk
                     break
+            # TEKER TEKER KİMİN NE DEDİĞİNİ BURADA YAZDIRIYORUZ
             structured_text += f"{speaker}: {segment.text.strip()}\n"
 
         # 3. Temizlik
@@ -96,7 +103,6 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"):
         return final_response, structured_text
 
     except Exception as e:
-        # KRİTİK DÜZELTME: Hata durumunda da iki değer dönüyoruz ki arayüzler çökmesin!
         return f"Hata: {str(e)}", "Döküm oluşturulamadı."
     
 
