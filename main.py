@@ -5,11 +5,10 @@ from backend import process_audio_full, save_as_pdf # save_as_pdf'i ekledik
 
 # Renk Teması
 COLORS = {
-    "bg": "#0f172a",
-    "sidebar": "#1e293b",
-    "accent": "#3b82f6",
-    "text": "#f8fafc",
-    "success": "#10b981" # PDF butonu için yeşil
+    "bg": "#f8fafc",       # Temiz soft beyaz
+    "sidebar": "#0f172a",  # Sol panel koyu (kontrast için harika durur)
+    "accent": "#3b82f6",   # Canlı mavi butonlar
+    "text": "#1e293b"      # Okunabilir koyu gri metinler
 }
 
 class AudioMindApp(ctk.CTk):

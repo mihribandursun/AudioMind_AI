@@ -100,7 +100,7 @@ def process_audio_full(audio_path, progress_callback, mode="Genel"): # 'mode' ek
         )
 
         final_response = completion.choices[0].message.content
-        return final_response
+        return final_response, structured_text
 
     except Exception as e:
         return f"Hata: {str(e)}"
