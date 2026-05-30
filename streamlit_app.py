@@ -58,6 +58,26 @@ st.markdown("""
     }
     [data-testid="stChatMessage"] p { color: #0f172a !important; }
     h1, h2, h3 { color: #1e3a8a !important; font-weight: 800 !important; }
+            
+    /* Kendi özel buton tasarımımız */
+    .custom-pdf-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background: linear-gradient(135deg, #059669, #047857) !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 16px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: background 0.2s ease;
+    }
+    .custom-pdf-btn:hover {
+        background: linear-gradient(135deg, #047857, #065f46) !important;
+        color: #ffffff !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -106,14 +126,14 @@ if st.session_state.report:
         st.markdown("<div class='download-btn-container'>", unsafe_allow_html=True)
         pdf_path = save_as_pdf(st.session_state.report, "analiz_raporu.pdf")
         with open(pdf_path, "rb") as f:
-            st.download_button(
-                label="RAPORU PDF OLARAK INDIR", 
-                data=f, 
-                file_name="AudioMind_Rapor.pdf", 
-                mime="application/pdf", 
-                use_container_width=True
-            )
-        st.markdown("</div>", unsafe_allow_html=True)
+            pdf_bytes = f.read()
+        
+        import base64
+        b64 = base64.b64encode(pdf_bytes).decode()
+        
+        # Streamlit'in sistemine takılmayan, yazısı her an beyaz kalan gerçek HTML butonu
+        custom_btn_html = f'<a href="data:application/pdf;base64,{b64}" download="AudioMind_Rapor.pdf" class="custom-pdf-btn">📥 PDF RAPORU İNDİR</a>'
+        st.markdown(custom_btn_html, unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### 💬 3. AudioMind Chat (Rapora Dair Soru Sor)")
