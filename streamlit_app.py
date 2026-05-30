@@ -5,6 +5,7 @@ st.set_page_config(page_title="AudioMind AI Pro", page_icon="🎙️", layout="w
 
 # 🎨 TASARIM VE RENK DÜZELTMELERİ (CSS)
 # streamlit_app.py içindeki CSS alanını SADECE bununla değiştir:
+# streamlit_app.py dosyanın en üstündeki CSS alanını TAMAMEN bunla değiştir:
 st.markdown("""
     <style>
     /* Ana Arka Plan */
@@ -23,7 +24,7 @@ st.markdown("""
         font-weight: 600;
     }
     
-    /* Canlı Ana Buton */
+    /* Canlı Ana Buton (✨ Analizi Başlat) */
     div.stButton > button:first-child {
         background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
         color: #ffffff !important;
@@ -33,24 +34,7 @@ st.markdown("""
         border-radius: 10px !important;
     }
     
-    /* 🚨 %100 KESİN PDF BUTONU DÜZELTMESİ 🚨 */
-    .download-btn-container div.stButton > button {
-        background: linear-gradient(135deg, #059669, #047857) !important;
-        border-radius: 8px !important;
-        border: none !important;
-        height: 45px !important;
-    }
-    /* Butonun içindeki yazıyı (span) HER ZAMAN beyaz yap */
-    .download-btn-container div.stButton > button span {
-        color: #ffffff !important;
-        font-weight: bold !important;
-    }
-    /* Fareyle üstüne gelince de renk beyaz kalmaya devam etsin */
-    .download-btn-container div.stButton > button:hover span {
-        color: #ffffff !important;
-    }
-
-    /* Analiz Kartları */
+    /* Analiz ve Rapor Kartları */
     .report-card {
         background-color: #ffffff !important;
         padding: 24px !important;
@@ -122,7 +106,13 @@ if st.session_state.report:
         st.markdown("<div class='download-btn-container'>", unsafe_allow_html=True)
         pdf_path = save_as_pdf(st.session_state.report, "analiz_raporu.pdf")
         with open(pdf_path, "rb") as f:
-            st.download_button("📥 PDF Raporu İndir", data=f, file_name="AudioMind_Rapor.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button(
+                label="RAPORU PDF OLARAK INDIR", 
+                data=f, 
+                file_name="AudioMind_Rapor.pdf", 
+                mime="application/pdf", 
+                use_container_width=True
+            )
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
